@@ -393,6 +393,16 @@ body {
 .summary-row { display: flex; align-items: center; gap: 11px; font-size: 14px; color: var(--ink); }
 .summary-row svg { width: 16px; height: 16px; color: var(--ink-soft); flex: none; }
 
+/* booking error + turnstile */
+.book-error {
+  font-size: 13px;
+  color: var(--error);
+  text-align: center;
+  margin-bottom: 4px;
+}
+.turnstile { display: flex; justify-content: center; min-height: 0; }
+.turnstile:empty { display: none; }
+
 /* ---------- reveal helper ---------- */
 .reveal { opacity: 0; }
 

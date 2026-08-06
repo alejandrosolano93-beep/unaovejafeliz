@@ -10,31 +10,92 @@
 const BOOKING_MODE = 'external'; // 'external' | 'internal'
 const GOOGLE_BOOKING_URL = 'https://calendar.app.google/P8TvSUSSjdqYemP66';
 
+/* --- Integración backend (Cloudflare Pages Functions) ---------
+   API_BASE vacío = mismo dominio (rutas /api/*).
+   TURNSTILE_SITE_KEY es la clave PÚBLICA de Turnstile (segura en cliente).  */
+const API_BASE = '';
+const TURNSTILE_SITE_KEY = ''; // rellenar con la site key de Cloudflare Turnstile
+
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /* --- Iconos ---------------------------------------------------- */
 if (window.lucide) window.lucide.createIcons();
 
-/* --- Estado de la reserva (datos maquetados) ------------------- */
+/* --- Estado de la reserva -------------------------------------- */
 const state = {
-  dateLabel: 'Jueves 30 jul',
-  dateLong: 'Jueves 30 de julio, 2026',
-  time: '11:30',
   service: 'Zumeria',
+  time: null,          // 'HH:MM' seleccionada
 };
+
+/* Disponibilidad real cargada desde /api/availability */
+let availability = { days: {}, durationMin: 60, error: false };
+let selectedDate = null;         // 'YYYY-MM-DD'
+let lastBookingLink = '';        // htmlLink del evento creado (paso 3)
+
+/* Vista del calendario (mes mostrado) */
+const today = new Date();
+let viewYear = today.getFullYear();
+let viewMonth = today.getMonth(); // 0-based
+
+const MONTHS = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+  'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+const WEEKDAYS_LONG = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo']; // lunes primero
+
+function pad2(n) { return String(n).padStart(2, '0'); }
+function ymdKey(y, m0, d) { return `${y}-${pad2(m0 + 1)}-${pad2(d)}`; }
+function parseKey(key) { const [y, m, d] = key.split('-').map(Number); return { y, m, d }; }
+function weekdayLongOf(key) {
+  const { y, m, d } = parseKey(key);
+  const dow = new Date(y, m - 1, d).getDay(); // 0=Dom
+  return WEEKDAYS_LONG[(dow + 6) % 7];
+}
+function dateLabelShort(key) {
+  const { m, d } = parseKey(key);
+  return `${cap(weekdayLongOf(key))} ${d} ${MONTHS[m - 1].slice(0, 3)}`;
+}
+function dateLabelLong(key) {
+  const { y, m, d } = parseKey(key);
+  return `${cap(weekdayLongOf(key))} ${d} de ${MONTHS[m - 1]}, ${y}`;
+}
+function monthRange(y, m0) {
+  const last = new Date(y, m0 + 1, 0).getDate();
+  return { from: ymdKey(y, m0, 1), to: ymdKey(y, m0, last) };
+}
 
 /* --- Referencias ----------------------------------------------- */
 const booking = document.getElementById('booking');
 const cards = Array.from(document.querySelectorAll('.card'));
 
 /* ============================================================
-   Calendario (Julio 2026, datos estáticos)
+   Calendario (dinámico, disponibilidad real de Google Calendar)
    ============================================================ */
-const WEEKDAYS = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
-const DAYS_IN_MONTH = 31;
-const LEADING_EMPTY = 2; // Julio 2026 empieza en miércoles
-const AVAILABLE = new Set([3, 4, 10, 11, 17, 18, 24, 25, 30, 31]);
-let selectedDay = 30;
+const WEEKDAYS_SHORT = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
+const WEEKDAYS_ABBR = ['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom'];
+
+/* Carga la disponibilidad del mes visible desde el backend. */
+async function loadAvailability() {
+  const { from, to } = monthRange(viewYear, viewMonth);
+  setSlotsStatus('Cargando disponibilidad…');
+  try {
+    const url = `${API_BASE}/api/availability?from=${from}&to=${to}&service=${encodeURIComponent(state.service)}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if (!res.ok || data.error) throw new Error(data.error || res.status);
+    availability = { days: data.days || {}, durationMin: data.durationMin || 60, error: false };
+  } catch (e) {
+    availability = { days: {}, durationMin: 60, error: true };
+  }
+
+  const keys = Object.keys(availability.days).sort();
+  if (!selectedDate || !availability.days[selectedDate]) selectedDate = keys[0] || null;
+  const times = selectedDate ? availability.days[selectedDate] : [];
+  state.time = times && times.length ? times[0] : null;
+
+  buildCalendar();
+  buildSlots();
+  updateSlotsLabel();
+  updateContinue();
+}
 
 function buildCalendar() {
   const cal = document.getElementById('calendar');
@@ -42,7 +103,7 @@ function buildCalendar() {
 
   const head = document.createElement('div');
   head.className = 'cal-row';
-  for (const wd of WEEKDAYS) {
+  for (const wd of WEEKDAYS_SHORT) {
     const c = document.createElement('div');
     c.className = 'cal-wd';
     c.textContent = wd;
@@ -50,9 +111,13 @@ function buildCalendar() {
   }
   cal.appendChild(head);
 
+  const firstDow = new Date(viewYear, viewMonth, 1).getDay(); // 0=Dom
+  const leading = (firstDow + 6) % 7;                          // lunes primero
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+
   const cells = [];
-  for (let i = 0; i < LEADING_EMPTY; i++) cells.push(null);
-  for (let d = 1; d <= DAYS_IN_MONTH; d++) cells.push(d);
+  for (let i = 0; i < leading; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
   while (cells.length % 7 !== 0) cells.push(null);
 
   for (let r = 0; r < cells.length / 7; r++) {
@@ -66,54 +131,81 @@ function buildCalendar() {
         cell.classList.add('is-empty');
       } else {
         cell.textContent = day;
-        if (!AVAILABLE.has(day)) {
+        const key = ymdKey(viewYear, viewMonth, day);
+        if (!availability.days[key]) {
           cell.classList.add('is-disabled');
         } else {
-          if (day === selectedDay) cell.classList.add('is-selected');
-          cell.addEventListener('click', () => selectDay(day, cell));
+          if (key === selectedDate) cell.classList.add('is-selected');
+          cell.addEventListener('click', () => selectDay(key, cell));
         }
       }
       row.appendChild(cell);
     }
     cal.appendChild(row);
   }
+
+  const label = document.querySelector('.month-nav .month');
+  if (label) label.textContent = `${cap(MONTHS[viewMonth])} ${viewYear}`;
 }
 
-function selectDay(day, cell) {
-  selectedDay = day;
+function selectDay(key, cell) {
+  selectedDate = key;
   document.querySelectorAll('.cal-day.is-selected').forEach((el) => el.classList.remove('is-selected'));
   cell.classList.add('is-selected');
-  const weekday = WEEKDAYS_LONG(day);
-  state.dateLabel = `${weekday} ${day} jul`;
-  state.dateLong = `${weekday} ${day} de julio, 2026`;
-  document.getElementById('slotsLabel').textContent = `Horas disponibles · ${abbr(state.dateLabel)}`;
+  const times = availability.days[key] || [];
+  state.time = times.includes(state.time) ? state.time : (times[0] || null);
+  buildSlots();
+  updateSlotsLabel();
+  updateContinue();
   pop(cell);
 }
 
-function WEEKDAYS_LONG(day) {
-  const names = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'];
-  const idx = (LEADING_EMPTY + day - 1) % 7;
-  return names[idx];
+function updateSlotsLabel() {
+  const el = document.getElementById('slotsLabel');
+  if (!el) return;
+  if (availability.error) { el.textContent = 'No se pudo cargar la disponibilidad'; return; }
+  if (!selectedDate) { el.textContent = 'No hay huecos disponibles este mes'; return; }
+  const { m, d } = parseKey(selectedDate);
+  const dow = new Date(parseKey(selectedDate).y, m - 1, d).getDay();
+  el.textContent = `Horas disponibles · ${WEEKDAYS_ABBR[(dow + 6) % 7]} ${d} ${MONTHS[m - 1].slice(0, 3)}`;
 }
-function abbr(label) {
-  return label.replace('lunes', 'lun').replace('martes', 'mar').replace('miércoles', 'mié')
-    .replace('jueves', 'jue').replace('viernes', 'vie').replace('sábado', 'sáb').replace('domingo', 'dom');
+
+function setSlotsStatus(msg) {
+  const label = document.getElementById('slotsLabel');
+  if (label) label.textContent = msg;
+  const wrap = document.getElementById('slots');
+  if (wrap) wrap.innerHTML = '';
+}
+
+function updateContinue() {
+  const btn = document.getElementById('continueBtn');
+  if (btn) btn.disabled = !(selectedDate && state.time);
+}
+
+function changeMonth(delta) {
+  const d = new Date(viewYear, viewMonth + delta, 1);
+  const cur = new Date(today.getFullYear(), today.getMonth(), 1);
+  if (d < cur) return; // no navegar a meses pasados
+  viewYear = d.getFullYear();
+  viewMonth = d.getMonth();
+  selectedDate = null;
+  loadAvailability();
 }
 
 /* ============================================================
-   Slots de hora
+   Slots de hora (del día seleccionado)
    ============================================================ */
-const SLOT_ROWS = [['10:00', '11:30', '13:00'], ['16:00', '17:30', '']];
-
 function buildSlots() {
   const wrap = document.getElementById('slots');
   wrap.innerHTML = '';
-  for (const row of SLOT_ROWS) {
+  const times = selectedDate ? (availability.days[selectedDate] || []) : [];
+  for (let i = 0; i < times.length; i += 3) {
     const r = document.createElement('div');
     r.className = 'slot-row';
-    for (const t of row) {
+    for (let j = 0; j < 3; j++) {
+      const t = times[i + j];
       const s = document.createElement('div');
-      if (t === '') {
+      if (t === undefined) {
         s.style.visibility = 'hidden';
       } else {
         s.className = 'slot';
@@ -131,6 +223,7 @@ function selectSlot(t, el) {
   state.time = t;
   document.querySelectorAll('.slot.is-selected').forEach((s) => s.classList.remove('is-selected'));
   el.classList.add('is-selected');
+  updateContinue();
   pop(el);
 }
 
@@ -172,6 +265,7 @@ function openStage() {
   if (stageOpen) return;
   stageOpen = true;
   activateOnly('step1');
+  loadAvailability(); // trae la disponibilidad real (no bloquea la animación)
 
   const hero = heroLogo.parentElement;
   // FLIP: medir el logo antes y después de mostrar el panel + reposicionar (móvil)
@@ -249,8 +343,13 @@ document.getElementById('reserveCta').addEventListener('click', () => {
 document.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', closeStage));
 document.querySelectorAll('[data-back]').forEach((b) => b.addEventListener('click', () => goToStep('step1')));
 
+const monthBtns = document.querySelectorAll('.month-nav .icon-btn');
+if (monthBtns[0]) monthBtns[0].addEventListener('click', () => changeMonth(-1));
+if (monthBtns[1]) monthBtns[1].addEventListener('click', () => changeMonth(1));
+
 document.getElementById('continueBtn').addEventListener('click', () => {
-  document.getElementById('summaryChip').textContent = `${cap(state.dateLabel)} · ${state.time}`;
+  if (!(selectedDate && state.time)) return;
+  document.getElementById('summaryChip').textContent = `${dateLabelShort(selectedDate)} · ${state.time}`;
   goToStep('step2');
 });
 
@@ -258,6 +357,18 @@ document.getElementById('f-service').addEventListener('change', (e) => {
   state.service = e.target.value;
   document.getElementById('serviceValue').textContent = e.target.value;
 });
+
+/* Turnstile (anti-spam). Se renderiza solo si hay site key configurada. */
+function initTurnstile() {
+  if (!TURNSTILE_SITE_KEY) return;
+  const mount = () => {
+    if (window.turnstile && document.getElementById('turnstile')) {
+      window.turnstile.render('#turnstile', { sitekey: TURNSTILE_SITE_KEY });
+    }
+  };
+  if (window.turnstile) mount();
+  else window.addEventListener('load', mount);
+}
 
 const REQUIRED_FIELDS = ['f-name', 'f-phone'];
 
@@ -290,40 +401,78 @@ function validateForm() {
   return ok;
 }
 
-document.getElementById('reserveBtn').addEventListener('click', () => {
+document.getElementById('reserveBtn').addEventListener('click', async () => {
   if (!validateForm()) return;
-  // NOTA: la integración con la API de Google Calendar aún no existe.
-  // Aquí se conectaría en el futuro. Por ahora solo mostramos la confirmación maquetada.
-  onReserve(collectForm());
-  document.getElementById('sumDate').textContent = cap(state.dateLong);
-  document.getElementById('sumTime').textContent = `${state.time} · 60 minutos`;
-  document.getElementById('sumService').textContent = state.service;
-  const email = document.getElementById('f-email').value.trim();
-  document.getElementById('confirmMail').textContent = email
-    ? `Confirmación enviada a ${email}`
-    : 'Confirmación enviada a tu correo';
-  goToStep('step3');
+  if (!(selectedDate && state.time)) { goToStep('step1'); return; }
+
+  const btn = document.getElementById('reserveBtn');
+  btn.disabled = true;
+  setBookError('');
+  try {
+    const res = await fetch(`${API_BASE}/api/book`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(collectForm()),
+    });
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok || !data.ok) {
+      if (data.error === 'SLOT_TAKEN') {
+        setBookError('Ese hueco acaba de ocuparse. Elige otro, por favor.');
+        await loadAvailability();
+        goToStep('step1');
+      } else if (data.error === 'SPAM_REJECTED') {
+        setBookError('No hemos podido verificar que no eres un robot. Inténtalo de nuevo.');
+        resetTurnstile();
+      } else {
+        setBookError('No se pudo completar la reserva. Inténtalo más tarde.');
+      }
+      return;
+    }
+
+    lastBookingLink = data.htmlLink || '';
+    document.getElementById('sumDate').textContent = dateLabelLong(selectedDate);
+    document.getElementById('sumTime').textContent = `${state.time} · ${availability.durationMin || 60} minutos`;
+    document.getElementById('sumService').textContent = state.service;
+    const email = document.getElementById('f-email').value.trim();
+    document.getElementById('confirmMail').textContent = email
+      ? `Confirmación enviada a ${email}`
+      : 'Confirmación enviada a tu correo';
+    goToStep('step3');
+  } catch (e) {
+    setBookError('Error de red. Inténtalo de nuevo.');
+  } finally {
+    btn.disabled = false;
+  }
 });
 
 document.getElementById('gcalBtn').addEventListener('click', () => {
-  window.open(GOOGLE_BOOKING_URL, '_blank', 'noopener,noreferrer');
+  window.open(lastBookingLink || GOOGLE_BOOKING_URL, '_blank', 'noopener,noreferrer');
 });
 
 function collectForm() {
+  const tokenEl = document.querySelector('[name="cf-turnstile-response"]');
   return {
+    date: selectedDate,
+    time: state.time,
+    service: state.service,
     name: document.getElementById('f-name').value.trim(),
     email: document.getElementById('f-email').value.trim(),
     phone: document.getElementById('f-phone').value.trim(),
-    service: state.service,
     notes: document.getElementById('f-notes').value.trim(),
-    day: selectedDay,
-    time: state.time,
+    antispamToken: tokenEl ? tokenEl.value : '',
   };
 }
 
-// eslint-disable-next-line no-unused-vars
-function onReserve(payload) {
-  /* TODO: Google Calendar API — crear el evento de reserva con `payload`. */
+function setBookError(msg) {
+  const el = document.getElementById('bookError');
+  if (!el) return;
+  el.textContent = msg || '';
+  el.hidden = !msg;
+}
+
+function resetTurnstile() {
+  if (window.turnstile && typeof window.turnstile.reset === 'function') window.turnstile.reset();
 }
 
 function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
@@ -376,4 +525,7 @@ async function initMotion() {
    ============================================================ */
 buildCalendar();
 buildSlots();
+updateSlotsLabel();
+updateContinue();
+initTurnstile();
 initMotion();

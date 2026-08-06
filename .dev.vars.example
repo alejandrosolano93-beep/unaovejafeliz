@@ -1,0 +1,16 @@
+# Copia este fichero a `.dev.vars` (ignorado por git) para pruebas locales con
+#   wrangler pages dev .
+# En PRODUCCIÓN estos valores van como *Secret* del proyecto de Cloudflare Pages
+# (Settings → Variables and Secrets), NUNCA en el repo ni en el bundle del frontend.
+
+# Calendario de reservas (Configuración del calendario → "ID del calendario")
+CALENDAR_ID=
+
+# --- Auth: Service Account (Opción 1) ---
+GOOGLE_SA_CLIENT_EMAIL=
+# Pega la private key PEM completa. Con \n escapados en una línea también vale.
+GOOGLE_SA_PRIVATE_KEY=
+
+# --- Anti-spam: Cloudflare Turnstile ---
+TURNSTILE_SECRET=
+# La site key es pública y se pone en el frontend (app.js), no aquí.

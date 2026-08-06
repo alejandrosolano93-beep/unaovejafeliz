@@ -1,0 +1,7 @@
+# Cloudflare / secrets locales — NUNCA commitear
+.dev.vars
+.wrangler/
+node_modules/
+
+# SO / editor
+.DS_Store

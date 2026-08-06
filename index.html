@@ -49,7 +49,7 @@
 
     <div class="spacer"></div>
 
-    <button class="btn-primary" id="continueBtn">Continuar</button>
+    <button class="btn-primary" id="continueBtn" disabled>Continuar</button>
     <div class="foot"><i data-lucide="calendar-check"></i><span>Sincronizado con Google Calendar</span></div>
   </section>
 
@@ -100,10 +100,12 @@
         <label for="f-notes">Notas (opcional)</label>
         <textarea id="f-notes" placeholder="Cuéntanos lo que necesites."></textarea>
       </div>
+      <div id="turnstile" class="turnstile"></div>
     </form>
 
     <div class="spacer"></div>
 
+    <div class="book-error" id="bookError" role="alert" hidden></div>
     <button class="btn-primary" id="reserveBtn">Reservar cita</button>
     <div class="foot"><i data-lucide="lock"></i><span>Gestionado con Google · tus datos están seguros</span></div>
   </section>
@@ -134,6 +136,7 @@
 </main>
 
 <script src="https://unpkg.com/lucide@latest"></script>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
 <script src="app.js"></script>
 </body>
 </html>
