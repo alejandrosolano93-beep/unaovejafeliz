@@ -1,0 +1,25 @@
+# Copia este fichero a `.dev.vars` (ignorado por git) para pruebas locales con
+#   wrangler pages dev .
+# En PRODUCCIÓN estos valores van como *Secret* del proyecto de Cloudflare Pages
+# (Settings → Variables and Secrets), NUNCA en el repo ni en el bundle del frontend.
+
+# Calendarios a LEER para disponibilidad (coma-separados). Normalmente el
+# calendario PRINCIPAL del cliente (compartido como "Ver solo la disponibilidad")
+# + el calendario "Reservas". Sus eventos nunca se exponen: freebusy solo da horas.
+BUSY_CALENDAR_IDS=principal@gmail.com,xxxxx@group.calendar.google.com
+
+# Calendario donde se ESCRIBEN las reservas (dedicado "Reservas",
+# compartido como "Hacer cambios en los eventos").
+BOOKING_CALENDAR_ID=xxxxx@group.calendar.google.com
+
+# (Alternativa simple: define solo CALENDAR_ID y se usará para leer y escribir.)
+# CALENDAR_ID=
+
+# --- Auth: Service Account (Opción 1) ---
+GOOGLE_SA_CLIENT_EMAIL=
+# Pega la private key PEM completa. Con \n escapados en una línea también vale.
+GOOGLE_SA_PRIVATE_KEY=
+
+# --- Anti-spam: Cloudflare Turnstile ---
+TURNSTILE_SECRET=
+# La site key es pública y se pone en el frontend (app.js), no aquí.
