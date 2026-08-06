@@ -100,7 +100,9 @@
         <label for="f-notes">Notas (opcional)</label>
         <textarea id="f-notes" placeholder="Cuéntanos lo que necesites."></textarea>
       </div>
-      <div id="turnstile" class="turnstile"></div>
+      <div class="turnstile">
+        <div class="cf-turnstile" data-sitekey="0x4AAAAAAEId_aZc7mvC02vt" data-action="turnstile-spin-v2"></div>
+      </div>
     </form>
 
     <div class="spacer"></div>
@@ -136,7 +138,7 @@
 </main>
 
 <script src="https://unpkg.com/lucide@latest"></script>
-<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 <script src="app.js"></script>
 </body>
 </html>

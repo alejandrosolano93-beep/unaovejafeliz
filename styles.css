@@ -416,7 +416,6 @@ body {
   margin-bottom: 4px;
 }
 .turnstile { display: flex; justify-content: center; min-height: 0; }
-.turnstile:empty { display: none; }
 
 /* ---------- reveal helper ---------- */
 .reveal { opacity: 0; }

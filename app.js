@@ -12,9 +12,8 @@ const GOOGLE_BOOKING_URL = 'https://calendar.app.google/P8TvSUSSjdqYemP66';
 
 /* --- Integración backend (Cloudflare Pages Functions) ---------
    API_BASE vacío = mismo dominio (rutas /api/*).
-   TURNSTILE_SITE_KEY es la clave PÚBLICA de Turnstile (segura en cliente).  */
+   La site key (pública) de Turnstile vive en index.html (div .cf-turnstile).  */
 const API_BASE = '';
-const TURNSTILE_SITE_KEY = ''; // rellenar con la site key de Cloudflare Turnstile
 
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -358,17 +357,6 @@ document.getElementById('f-service').addEventListener('change', (e) => {
   document.getElementById('serviceValue').textContent = e.target.value;
 });
 
-/* Turnstile (anti-spam). Se renderiza solo si hay site key configurada. */
-function initTurnstile() {
-  if (!TURNSTILE_SITE_KEY) return;
-  const mount = () => {
-    if (window.turnstile && document.getElementById('turnstile')) {
-      window.turnstile.render('#turnstile', { sitekey: TURNSTILE_SITE_KEY });
-    }
-  };
-  if (window.turnstile) mount();
-  else window.addEventListener('load', mount);
-}
 
 const REQUIRED_FIELDS = ['f-name', 'f-phone'];
 
@@ -426,10 +414,10 @@ document.getElementById('reserveBtn').addEventListener('click', async () => {
         goToStep('step1');
       } else if (data.error === 'SPAM_REJECTED') {
         setBookError('No hemos podido verificar que no eres un robot. Inténtalo de nuevo.');
-        resetTurnstile();
       } else {
         setBookError('No se pudo completar la reserva. Inténtalo más tarde.');
       }
+      resetTurnstile(); // el token de Turnstile es de un solo uso: refrescarlo para el reintento
       return;
     }
 
@@ -455,8 +443,16 @@ document.getElementById('gcalBtn').addEventListener('click', () => {
   window.open(lastBookingLink || GOOGLE_BOOKING_URL, '_blank', 'noopener,noreferrer');
 });
 
+function turnstileToken() {
+  if (window.turnstile && typeof window.turnstile.getResponse === 'function') {
+    const t = window.turnstile.getResponse();
+    if (t) return t;
+  }
+  const el = document.querySelector('[name="cf-turnstile-response"]');
+  return el ? el.value : '';
+}
+
 function collectForm() {
-  const tokenEl = document.querySelector('[name="cf-turnstile-response"]');
   return {
     date: selectedDate,
     time: state.time,
@@ -465,7 +461,7 @@ function collectForm() {
     email: document.getElementById('f-email').value.trim(),
     phone: document.getElementById('f-phone').value.trim(),
     notes: document.getElementById('f-notes').value.trim(),
-    antispamToken: tokenEl ? tokenEl.value : '',
+    antispamToken: turnstileToken(),
   };
 }
 
@@ -532,5 +528,4 @@ buildCalendar();
 buildSlots();
 updateSlotsLabel();
 updateContinue();
-initTurnstile();
 initMotion();

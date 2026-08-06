@@ -27,14 +27,14 @@ function gcalTemplateUrl({ text, details, location, startISO, endISO }) {
 }
 
 async function verifyTurnstile(env, token, ip) {
-  if (!env.TURNSTILE_SECRET) return true; // sin secret configurado, no bloquea (dev)
+  if (!env.TURNSTILE_SECRET) return { ok: true, codes: [] }; // sin secret configurado, no bloquea (dev)
   const res = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
     method: 'POST',
     headers: { 'content-type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({ secret: env.TURNSTILE_SECRET, response: token || '', remoteip: ip || '' }),
   });
   const data = await res.json().catch(() => ({ success: false }));
-  return !!data.success;
+  return { ok: !!data.success, codes: data['error-codes'] || [] };
 }
 
 function clean(s, max) {
@@ -58,8 +58,10 @@ export async function onRequestPost({ request, env }) {
     if (email && !EMAIL_RE.test(email)) return json({ error: 'INVALID_INPUT', detail: 'email' }, 400);
 
     const ip = request.headers.get('cf-connecting-ip') || '';
-    if (!(await verifyTurnstile(env, body.antispamToken, ip))) {
-      return json({ error: 'SPAM_REJECTED' }, 403);
+    const ts = await verifyTurnstile(env, body.antispamToken, ip);
+    if (!ts.ok) {
+      console.log('TURNSTILE FAIL', JSON.stringify({ hasToken: !!body.antispamToken, codes: ts.codes }));
+      return json({ error: 'SPAM_REJECTED', detail: ts.codes.join(',') || (body.antispamToken ? 'verify-failed' : 'missing-token') }, 403);
     }
 
     const { durationMin, location } = serviceConfig(service);
