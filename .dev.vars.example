@@ -3,8 +3,17 @@
 # En PRODUCCIÓN estos valores van como *Secret* del proyecto de Cloudflare Pages
 # (Settings → Variables and Secrets), NUNCA en el repo ni en el bundle del frontend.
 
-# Calendario de reservas (Configuración del calendario → "ID del calendario")
-CALENDAR_ID=
+# Calendarios a LEER para disponibilidad (coma-separados). Normalmente el
+# calendario PRINCIPAL del cliente (compartido como "Ver solo la disponibilidad")
+# + el calendario "Reservas". Sus eventos nunca se exponen: freebusy solo da horas.
+BUSY_CALENDAR_IDS=principal@gmail.com,xxxxx@group.calendar.google.com
+
+# Calendario donde se ESCRIBEN las reservas (dedicado "Reservas",
+# compartido como "Hacer cambios en los eventos").
+BOOKING_CALENDAR_ID=xxxxx@group.calendar.google.com
+
+# (Alternativa simple: define solo CALENDAR_ID y se usará para leer y escribir.)
+# CALENDAR_ID=
 
 # --- Auth: Service Account (Opción 1) ---
 GOOGLE_SA_CLIENT_EMAIL=

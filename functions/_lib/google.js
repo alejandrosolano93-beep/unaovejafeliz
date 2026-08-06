@@ -80,9 +80,24 @@ export async function getAccessToken(env) {
   return cachedToken.token;
 }
 
-/* Devuelve los intervalos ocupados [{start,end}] (ISO) del calendario. */
+/* Calendarios a LEER para disponibilidad (principal en "solo disponibilidad"
+   + "Reservas"). Coma-separados en BUSY_CALENDAR_IDS; fallback a CALENDAR_ID. */
+export function busyCalendarIds(env) {
+  const raw = env.BUSY_CALENDAR_IDS || env.CALENDAR_ID || '';
+  return raw.split(',').map((s) => s.trim()).filter(Boolean);
+}
+
+/* Calendario donde se ESCRIBEN las reservas (dedicado). */
+export function bookingCalendarId(env) {
+  return env.BOOKING_CALENDAR_ID || env.CALENDAR_ID;
+}
+
+/* Unión de intervalos ocupados [{start,end}] (ISO) de todos los calendarios
+   consultados. `freebusy` solo devuelve horas ocupadas, nunca detalles. */
 export async function freeBusy(env, token, timeMinISO, timeMaxISO) {
-  const calendarId = env.CALENDAR_ID;
+  const ids = busyCalendarIds(env);
+  if (!ids.length) throw new Error('No hay calendarios configurados (BUSY_CALENDAR_IDS/CALENDAR_ID)');
+
   const res = await fetch('https://www.googleapis.com/calendar/v3/freeBusy', {
     method: 'POST',
     headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
@@ -90,20 +105,25 @@ export async function freeBusy(env, token, timeMinISO, timeMaxISO) {
       timeMin: timeMinISO,
       timeMax: timeMaxISO,
       timeZone: 'UTC',
-      items: [{ id: calendarId }],
+      items: ids.map((id) => ({ id })),
     }),
   });
   if (!res.ok) throw new Error(`freeBusy ${res.status}: ${await res.text()}`);
+
   const data = await res.json();
-  const cal = data.calendars && data.calendars[calendarId];
-  if (!cal) throw new Error('Calendario no encontrado en la respuesta de freeBusy');
-  if (cal.errors && cal.errors.length) throw new Error(`freeBusy cal error: ${JSON.stringify(cal.errors)}`);
-  return cal.busy || [];
+  const busy = [];
+  for (const id of ids) {
+    const cal = data.calendars && data.calendars[id];
+    if (!cal) throw new Error(`Calendario no encontrado en freeBusy: ${id}`);
+    if (cal.errors && cal.errors.length) throw new Error(`freeBusy cal error (${id}): ${JSON.stringify(cal.errors)}`);
+    for (const b of cal.busy || []) busy.push(b);
+  }
+  return busy;
 }
 
-/* Crea el evento de reserva. Devuelve { id, htmlLink }. */
+/* Crea el evento de reserva en el calendario de escritura. Devuelve { id, htmlLink }. */
 export async function insertEvent(env, token, event, sendUpdates) {
-  const calendarId = encodeURIComponent(env.CALENDAR_ID);
+  const calendarId = encodeURIComponent(bookingCalendarId(env));
   const url = `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events?sendUpdates=${sendUpdates || 'none'}`;
   const res = await fetch(url, {
     method: 'POST',

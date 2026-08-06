@@ -2,7 +2,7 @@ name = "unaovejafeliz"
 compatibility_date = "2026-08-06"
 pages_build_output_dir = "."
 
-# Los secretos (CALENDAR_ID, GOOGLE_SA_*, TURNSTILE_SECRET) NO van aquí.
+# Los secretos (BUSY_CALENDAR_IDS, BOOKING_CALENDAR_ID, GOOGLE_SA_*, TURNSTILE_SECRET) NO van aquí.
 # En local: fichero `.dev.vars` (ignorado por git).
 # En producción: Cloudflare Pages → Settings → Variables and Secrets (tipo Secret).
 #
