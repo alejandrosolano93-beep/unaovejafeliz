@@ -14,21 +14,6 @@ const json = (obj, status = 200) =>
 export async function onRequestGet({ request, env }) {
   try {
     const url = new URL(request.url);
-
-    // Diagnóstico temporal (solo booleanos, sin exponer valores).
-    if (url.searchParams.get('debug') === '1') {
-      return json({
-        have: {
-          GOOGLE_SA_CLIENT_EMAIL: !!env.GOOGLE_SA_CLIENT_EMAIL,
-          GOOGLE_SA_PRIVATE_KEY: !!env.GOOGLE_SA_PRIVATE_KEY,
-          BUSY_CALENDAR_IDS: !!env.BUSY_CALENDAR_IDS,
-          BOOKING_CALENDAR_ID: !!env.BOOKING_CALENDAR_ID,
-          TURNSTILE_SECRET: !!env.TURNSTILE_SECRET,
-          CALENDAR_ID: !!env.CALENDAR_ID,
-        },
-      });
-    }
-
     const from = parseYmd(url.searchParams.get('from'));
     const to = parseYmd(url.searchParams.get('to'));
     if (!from || !to) return json({ error: 'INVALID_INPUT', detail: 'from/to requeridos (YYYY-MM-DD)' }, 400);
