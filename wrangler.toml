@@ -1,10 +1,15 @@
 name = "unaovejafeliz"
+main = "worker.js"
 compatibility_date = "2026-08-06"
-pages_build_output_dir = "."
+
+# Sitio estático servido como Static Assets (binding ASSETS en el Worker).
+[assets]
+directory = "./public"
+binding = "ASSETS"
 
 # Los secretos (BUSY_CALENDAR_IDS, BOOKING_CALENDAR_ID, GOOGLE_SA_*, TURNSTILE_SECRET) NO van aquí.
 # En local: fichero `.dev.vars` (ignorado por git).
-# En producción: Cloudflare Pages → Settings → Variables and Secrets (tipo Secret).
+# En producción: panel del Worker → Settings → Variables and Secrets (tipo Secret).
 #
-# Desarrollo local:  npx wrangler pages dev .
-# Cargar un secret:  npx wrangler pages secret put GOOGLE_SA_PRIVATE_KEY
+# Desarrollo local:  npx wrangler dev
+# Cargar un secret:  npx wrangler secret put GOOGLE_SA_PRIVATE_KEY

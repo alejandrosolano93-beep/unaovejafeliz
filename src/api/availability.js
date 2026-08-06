@@ -1,9 +1,9 @@
 /* GET /api/availability?from=YYYY-MM-DD&to=YYYY-MM-DD&service=Zumeria
    Devuelve los huecos libres por día. */
-import { TIMEZONE, MAX_ADVANCE_DAYS, serviceConfig, DEFAULT_SERVICE } from '../_lib/config.js';
-import { parseYmd, zonedToUtc } from '../_lib/time.js';
-import { getAccessToken, freeBusy } from '../_lib/google.js';
-import { computeAvailability } from '../_lib/slots.js';
+import { TIMEZONE, MAX_ADVANCE_DAYS, serviceConfig, DEFAULT_SERVICE } from '../lib/config.js';
+import { parseYmd, zonedToUtc } from '../lib/time.js';
+import { getAccessToken, freeBusy } from '../lib/google.js';
+import { computeAvailability } from '../lib/slots.js';
 
 const json = (obj, status = 200) =>
   new Response(JSON.stringify(obj), {
