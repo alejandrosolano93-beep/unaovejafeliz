@@ -86,8 +86,8 @@ account **no** ve ningún calendario hasta que el cliente se lo comparte.
 
 ## Parte D — Cargar los secretos
 
-### En Cloudflare Pages (producción)
-Panel de Cloudflare → **Workers & Pages → tu proyecto (unaovejafeliz) → Settings →
+### En Cloudflare (producción)
+Panel de Cloudflare → **Workers & Pages → tu Worker (unaovejafeliz) → Settings →
 Variables and Secrets**. Añade, **tipo "Secret"** (cifrado):
 
 ```
@@ -100,11 +100,11 @@ TURNSTILE_SECRET         = <de la Parte C>
 
 O por línea de comandos:
 ```
-npx wrangler pages secret put BUSY_CALENDAR_IDS
-npx wrangler pages secret put BOOKING_CALENDAR_ID
-npx wrangler pages secret put GOOGLE_SA_CLIENT_EMAIL
-npx wrangler pages secret put GOOGLE_SA_PRIVATE_KEY
-npx wrangler pages secret put TURNSTILE_SECRET
+npx wrangler secret put BUSY_CALENDAR_IDS
+npx wrangler secret put BOOKING_CALENDAR_ID
+npx wrangler secret put GOOGLE_SA_CLIENT_EMAIL
+npx wrangler secret put GOOGLE_SA_PRIVATE_KEY
+npx wrangler secret put TURNSTILE_SECRET
 ```
 
 ### En local (pruebas)
@@ -115,16 +115,16 @@ los mismos valores. La `private_key` en una sola línea con `\n` escapados es lo
 
 ## Parte E — Poner la site key en el frontend
 
-En `app.js`, arriba, rellena la constante (es pública, no es secreto):
-```js
-const TURNSTILE_SITE_KEY = '0x4AAAAAA...'; // Site Key de la Parte C
+En `public/index.html`, en el widget de Turnstile, pon la Site Key (es pública, no es secreto):
+```html
+<div class="cf-turnstile" data-sitekey="0x4AAAAAA..." data-action="turnstile-spin-v2"></div>
 ```
 
 ---
 
 ## Parte F — Confirmar el horario y los servicios
 
-Edita `functions/_lib/config.js` (ahora tiene **valores de ejemplo**) y ajusta a tu realidad:
+Edita `src/lib/config.js` (ahora tiene **valores de ejemplo**) y ajusta a tu realidad:
 - `WEEKLY_HOURS` — tramos de apertura por día de la semana.
 - `SERVICES` — duración y ubicación por servicio (`Zumeria`, `Valor`, `Otros`).
 - `SLOT_INTERVAL_MIN`, `BUFFER_MIN`, `MIN_NOTICE_MIN`, `MAX_ADVANCE_DAYS`.
@@ -135,12 +135,14 @@ Edita `functions/_lib/config.js` (ahora tiene **valores de ejemplo**) y ajusta a
 
 1. **Local:** con `.dev.vars` relleno:
    ```
-   npx wrangler pages dev .
+   npx wrangler dev
    ```
-   Abre la URL local, cambia `BOOKING_MODE = 'internal'` en `app.js`, y comprueba que el
-   calendario muestra huecos reales y que una reserva de prueba aparece en Google Calendar.
-2. **Producción:** haz push; Cloudflare Pages despliega solo. Verifica que los secretos están
-   cargados (Parte D) y que el dominio está en los hostnames de Turnstile (Parte C).
+   Abre la URL local (http://127.0.0.1:8788), con `BOOKING_MODE = 'internal'` en `public/app.js`,
+   y comprueba que el calendario muestra huecos reales y que una reserva de prueba aparece en
+   Google Calendar.
+2. **Producción:** haz push; Cloudflare construye y despliega el Worker (`npx wrangler deploy`).
+   Verifica que los secretos están cargados (Parte D) y que el dominio está en los hostnames de
+   Turnstile (Parte C).
 3. Cuando esté validado, deja `BOOKING_MODE = 'internal'` para activar el flujo interno.
 
 ---
@@ -190,9 +192,9 @@ Con **Service Account + Gmail personal**, Google **no** manda invitación al cli
 - **B. OAuth con refresh token del dueño** (funciona con Gmail personal): en vez de la service
   account, el dueño da consentimiento una vez y se guarda un `refresh_token`. Requiere crear un
   **OAuth client ID** (tipo *Web*) y **publicar** la app OAuth. Hay que sustituir `getAccessToken()`
-  en `functions/_lib/google.js` por el intercambio de refresh token (avísame y lo implemento).
+  en `src/lib/google.js` por el intercambio de refresh token (avísame y lo implemento).
 - **C. Email propio** (Resend/SendGrid/Postmark): mantenemos la service account y enviamos
-  nosotros la confirmación desde `functions/api/book.js`. Requiere una API key y dominio verificado.
+  nosotros la confirmación desde `src/api/book.js`. Requiere una API key y dominio verificado.
 
 ---
 

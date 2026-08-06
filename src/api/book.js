@@ -1,9 +1,9 @@
 /* POST /api/book
    Crea la reserva tras validar entrada, anti-spam y re-comprobar el hueco. */
-import { TIMEZONE, SEND_UPDATES, SERVICES, serviceConfig, DEFAULT_SERVICE } from '../_lib/config.js';
-import { parseYmd, parseHm, zonedToUtc } from '../_lib/time.js';
-import { getAccessToken, freeBusy, insertEvent } from '../_lib/google.js';
-import { isSlotBookable } from '../_lib/slots.js';
+import { TIMEZONE, SEND_UPDATES, SERVICES, serviceConfig, DEFAULT_SERVICE } from '../lib/config.js';
+import { parseYmd, parseHm, zonedToUtc } from '../lib/time.js';
+import { getAccessToken, freeBusy, insertEvent } from '../lib/google.js';
+import { isSlotBookable } from '../lib/slots.js';
 
 const json = (obj, status = 200) =>
   new Response(JSON.stringify(obj), {
