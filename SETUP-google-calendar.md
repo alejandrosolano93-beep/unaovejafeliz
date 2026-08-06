@@ -21,7 +21,12 @@ Al terminar tendrás estos valores para cargar en Cloudflare (y en `.dev.vars` p
 
 ## Parte A — Google Cloud: proyecto, API y service account
 
-1. Entra en **https://console.cloud.google.com** con la cuenta de Google del negocio.
+> **Esto va en TU cuenta de Google, NO en la del cliente.** La service account es una identidad
+> de aplicación tuya; el cliente solo compartirá sus calendarios con su email (Parte B), sin
+> tocar Google Cloud. Crear el proyecto y usar la Calendar API es **gratuito** (no requiere
+> tarjeta). Si gestionas varios negocios, puedes reutilizar el mismo proyecto/service account.
+
+1. Entra en **https://console.cloud.google.com** con **tu** cuenta de Google.
 2. Arriba, en el selector de proyecto → **Nuevo proyecto**. Nombre: `una-oveja-feliz`. Créalo y
    selecciónalo.
 3. Menú **APIs y servicios → Biblioteca**. Busca **Google Calendar API** → **Habilitar**.
@@ -142,18 +147,36 @@ Edita `functions/_lib/config.js` (ahora tiene **valores de ejemplo**) y ajusta a
 
 ## Mensaje para el cliente (copia y pega)
 
-> Para conectar la web de reservas con tu Google Calendar necesito dos cosas (no necesito tu
-> contraseña ni acceso a tu cuenta; puedes revocarlo cuando quieras dejando de compartir):
+> **Importante:** hazlo desde un **ordenador** (la app del móvil no permite crear calendarios ni
+> cambiar quién puede verlos). No necesito tu contraseña; puedes deshacerlo cuando quieras.
 >
-> 1. Crea un calendario nuevo llamado **"Reservas"** (en Google Calendar: *Otros calendarios →
->    + → Crear calendario nuevo*).
-> 2. Comparte **"Reservas"** con este correo `PEGA_EL_EMAIL_DE_LA_SERVICE_ACCOUNT` con permiso
->    **"Hacer cambios en los eventos"**.
-> 3. Comparte tu calendario **principal** con el **mismo correo**, pero con permiso
->    **"Ver solo la disponibilidad (ocultar detalles)"** — así tus citas personales bloquean
->    horas en la web sin que se vean sus detalles.
-> 4. Mándame el **"ID del calendario"** de ambos (en cada uno: *Configuración → Integrar el
->    calendario → ID del calendario*).
+> **1) Abre tu calendario**
+> Entra en **calendar.google.com** e inicia sesión con tu cuenta.
+>
+> **2) Crea un calendario nuevo llamado "Reservas"**
+> En la columna de la izquierda, busca **"Otros calendarios"** y pulsa el signo **+** → **"Crear
+> calendario nuevo"**. En "Nombre" escribe **Reservas** y pulsa **"Crear calendario"**. Espera
+> unos segundos y vuelve atrás con la flecha del navegador.
+>
+> **3) Comparte el calendario "Reservas" conmigo**
+> En la izquierda, pasa el ratón sobre **"Reservas"**, pulsa los **tres puntitos (⋮)** →
+> **"Configuración y uso compartido"**. Baja hasta **"Compartir con determinadas personas o
+> grupos"** → **"Añadir personas y grupos"**. Pega este correo:
+> **`PEGA_EL_EMAIL_DE_LA_SERVICE_ACCOUNT`**
+> y en "Permisos" elige **"Hacer cambios en los eventos"**. Pulsa **"Enviar"**.
+>
+> **4) Comparte tu calendario principal (solo la disponibilidad)**
+> En la izquierda, en **"Mis calendarios"**, pasa el ratón sobre el calendario que lleva tu
+> nombre, pulsa los **tres puntitos (⋮)** → **"Configuración y uso compartido"** → **"Añadir
+> personas y grupos"**. Pega el **mismo correo** de antes, pero esta vez elige el permiso
+> **"Ver solo la disponibilidad (ocultar detalles)"**. Pulsa **"Enviar"**.
+> *(Esto hace que tus citas personales ocupen la hora en la web, pero nadie verá de qué son.)*
+>
+> **5) Mándame un dato**
+> Sigues en **"Configuración y uso compartido"** del calendario **"Reservas"**: baja del todo
+> hasta **"Integrar el calendario"** y cópiame el texto que aparece en **"ID de calendario"**
+> (algo que termina en `@group.calendar.google.com`). Pégamelo en un mensaje junto con **la
+> dirección de correo de tu cuenta de Google**. ¡Y ya está!
 
 ---
 
