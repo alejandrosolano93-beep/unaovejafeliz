@@ -7,6 +7,7 @@
   --ink: #201C15;
   --ink-soft: #5B5446;
   --on-dark: #F2EEE3;
+  --error: #B4462F;
   --shadow: 0 12px 32px -8px #20201519;
   --radius-card: 12px;
   --radius: 8px;
@@ -37,17 +38,9 @@ body {
   inset: 0 0 auto 0;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   padding: 28px 48px;
   z-index: 20;
-}
-
-.brand {
-  font-family: var(--font-script);
-  font-size: 32px;
-  color: var(--ink);
-  text-decoration: none;
-  line-height: 1;
 }
 
 .cta {
@@ -92,19 +85,8 @@ body {
   max-width: min(420px, 82vw);
   max-height: 62vh;
   display: block;
-  /* el logo original va sobre fondo blanco: multiply lo integra en el crema */
-  mix-blend-mode: multiply;
+  will-change: transform;   /* promueve a capa GPU: desplazamiento fluido */
 }
-
-.sheep-outline {
-  fill: none;
-  stroke: var(--ink);
-  stroke-width: 3;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.sheep-fill { fill: var(--ink); }
 
 /* ---------- Booking panel (inline, single screen) ---------- */
 .booking {
@@ -311,6 +293,12 @@ body {
 .field input::placeholder,
 .field textarea::placeholder { color: var(--border); }
 
+.field .req { color: var(--error); }
+.field .err { display: none; font-size: 12px; color: var(--error); }
+.field.is-invalid .err { display: block; }
+.field.is-invalid input { border-color: var(--error); }
+.field.is-invalid input:focus { box-shadow: 0 4px 14px -8px #B4462F33; }
+
 .field input:focus,
 .field textarea:focus,
 .field .select:focus {
@@ -388,8 +376,8 @@ body {
 
 /* confirmation */
 .confirm-body { display: flex; flex-direction: column; align-items: center; gap: 14px; }
-.confirm-logo { width: 96px; height: 96px; }
-.confirm-logo svg { width: 100%; height: 100%; }
+.confirm-logo { width: 112px; }
+.confirm-logo img { width: 100%; height: auto; display: block; }
 .confirm-title { font-family: var(--font-head); font-weight: 600; font-size: 28px; color: var(--ink); }
 .confirm-sub { font-size: 14px; color: var(--ink-soft); text-align: center; line-height: 1.5; max-width: 300px; }
 
@@ -417,10 +405,21 @@ body {
 @media (max-width: 960px) {
   .hero { flex-direction: column; gap: 32px; padding: 100px 20px 60px; }
   .hero-logo { max-height: 34vh; }
+
+  /* con el flujo de reserva abierto, el logo se reduce y ancla arriba a la izquierda */
+  .hero.is-staged { padding-top: 96px; }
+  .hero.is-staged .hero-logo {
+    position: fixed;
+    top: 16px;
+    left: 20px;
+    margin: 0;
+    max-width: 76px;
+    max-height: 58px;
+    z-index: 21;
+  }
 }
 
 @media (max-width: 560px) {
   .topbar { padding: 18px 20px; }
-  .brand { font-size: 26px; }
   .card { padding: 20px; gap: 18px; }
 }

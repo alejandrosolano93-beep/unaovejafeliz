@@ -161,10 +161,10 @@ function goToStep(toId) {
 }
 
 /* --- Apertura/cierre del panel (una sola pantalla, transición FLIP) --- */
-const STAGE_MS = 2500;          // desplazamiento del logo
+const STAGE_MS = 1500;          // desplazamiento del logo
 const APPEAR_MS = 500;          // aparición del formulario (fade-in)
-const STAGE_EASE = 'inOut(3)';  // easing suave (aceleración/desaceleración)
-// conjunto de la transición ≈ STAGE_MS + APPEAR_MS = 3s
+const STAGE_EASE = 'inOut(2)';  // easing suave, con aceleración central contenida
+// conjunto de la transición ≈ STAGE_MS + APPEAR_MS = 2s
 let stageOpen = false;
 const heroLogo = document.querySelector('.hero-logo');
 
@@ -173,20 +173,24 @@ function openStage() {
   stageOpen = true;
   activateOnly('step1');
 
-  // FLIP: medir el logo antes y después de mostrar el panel
+  const hero = heroLogo.parentElement;
+  // FLIP: medir el logo antes y después de mostrar el panel + reposicionar (móvil)
   const first = heroLogo.getBoundingClientRect();
   booking.hidden = false;
+  hero.classList.add('is-staged');
   const last = heroLogo.getBoundingClientRect();
   const dx = first.left - last.left;
   const dy = first.top - last.top;
+  const sx = first.width / last.width; // en móvil el logo se reduce; en escritorio ≈ 1
 
   if (reduceMotion || !anime) return;
 
   // el formulario permanece oculto hasta que el logo termine
   booking.style.opacity = '0';
 
-  // el logo se desliza muy suavemente a su nueva posición (izquierda), en 4s
-  anime.animate(heroLogo, { translateX: [dx, 0], translateY: [dy, 0], duration: STAGE_MS, ease: STAGE_EASE });
+  // el logo se desliza (y en móvil se reduce) suavemente a su nueva posición
+  heroLogo.style.transformOrigin = 'top left';
+  anime.animate(heroLogo, { translateX: [dx, 0], translateY: [dy, 0], scale: [sx, 1], duration: STAGE_MS, ease: STAGE_EASE });
 
   // el formulario entra solapando el tramo final del logo (0.5s antes) para evitar la pausa
   anime.animate(booking, { opacity: [0, 1], translateY: [16, 0], duration: APPEAR_MS, delay: STAGE_MS - 500, ease: 'out(3)' });
@@ -194,15 +198,17 @@ function openStage() {
 
 function closeStage() {
   if (!stageOpen) return;
+  const hero = heroLogo.parentElement;
   const finish = () => {
     booking.hidden = true;
     booking.style.opacity = '';
     booking.style.transform = '';
     booking.style.filter = '';
+    hero.classList.remove('is-staged');
     activateOnly('step1');
     stageOpen = false;
   };
-  if (reduceMotion || !anime) { finish(); heroLogo.style.transform = ''; return; }
+  if (reduceMotion || !anime) { finish(); heroLogo.style.transform = ''; heroLogo.style.transformOrigin = ''; return; }
 
   const first = heroLogo.getBoundingClientRect();
   // el formulario se desvanece con fade-out + leve desplazamiento (0.5s)
@@ -210,11 +216,17 @@ function closeStage() {
     opacity: [1, 0], translateY: [0, 16], duration: APPEAR_MS, ease: 'in(2)',
     onComplete: () => {
       booking.hidden = true;
+      hero.classList.remove('is-staged');
       const last = heroLogo.getBoundingClientRect();
       const dx = first.left - last.left;
       const dy = first.top - last.top;
-      // y el logo regresa suavemente al centro
-      anime.animate(heroLogo, { translateX: [dx, 0], translateY: [dy, 0], duration: STAGE_MS, ease: STAGE_EASE });
+      const sx = first.width / last.width;
+      // y el logo regresa suavemente al centro (y a su tamaño original en móvil)
+      heroLogo.style.transformOrigin = 'top left';
+      anime.animate(heroLogo, {
+        translateX: [dx, 0], translateY: [dy, 0], scale: [sx, 1], duration: STAGE_MS, ease: STAGE_EASE,
+        onComplete: () => { heroLogo.style.transformOrigin = ''; },
+      });
       booking.style.opacity = '';
       booking.style.transform = '';
       activateOnly('step1');
@@ -247,7 +259,39 @@ document.getElementById('f-service').addEventListener('change', (e) => {
   document.getElementById('serviceValue').textContent = e.target.value;
 });
 
+const REQUIRED_FIELDS = ['f-name', 'f-phone'];
+
+REQUIRED_FIELDS.forEach((id) => {
+  document.getElementById(id).addEventListener('input', (e) => {
+    e.target.closest('.field').classList.remove('is-invalid');
+  });
+});
+
+function validateForm() {
+  let ok = true;
+  const invalid = [];
+  REQUIRED_FIELDS.forEach((id) => {
+    const input = document.getElementById(id);
+    const field = input.closest('.field');
+    if (!input.value.trim()) {
+      field.classList.add('is-invalid');
+      invalid.push(field);
+      ok = false;
+    } else {
+      field.classList.remove('is-invalid');
+    }
+  });
+  if (!ok) {
+    invalid[0].querySelector('input').focus();
+    if (!reduceMotion && anime) {
+      anime.animate(invalid, { translateX: [0, -6, 6, -4, 4, 0], duration: 380, ease: 'inOut(2)' });
+    }
+  }
+  return ok;
+}
+
 document.getElementById('reserveBtn').addEventListener('click', () => {
+  if (!validateForm()) return;
   // NOTA: la integración con la API de Google Calendar aún no existe.
   // Aquí se conectaría en el futuro. Por ahora solo mostramos la confirmación maquetada.
   onReserve(collectForm());
@@ -321,9 +365,8 @@ async function initMotion() {
 
   // Entrada del hero
   const tl = createTimeline({ defaults: { ease: 'out(3)', duration: 800 } });
-  tl.add('.brand', { opacity: [0, 1], translateY: [16, 0] }, 0)
-    .add('.cta', { opacity: [0, 1], translateY: [12, 0] }, 120)
-    .add('.hero-logo', { opacity: [0, 1], scale: [0.92, 1], translateY: [12, 0], duration: 1000 }, 200);
+  tl.add('.cta', { opacity: [0, 1], translateY: [12, 0] }, 0)
+    .add('.hero-logo', { opacity: [0, 1], scale: [0.92, 1], translateY: [12, 0], duration: 1000 }, 120);
 
   bindPress();
 }

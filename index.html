@@ -6,6 +6,7 @@
 <title>Una oveja feliz</title>
 <meta name="description" content="Una oveja feliz — reserva tu cita. Con calma, sin prisa.">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="512x512" href="favicon.png">
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -15,21 +16,12 @@
 </head>
 <body>
 
-<!-- Reusable sheep logo (SVG symbol) -->
-<svg width="0" height="0" aria-hidden="true" style="position:absolute">
-  <symbol id="sheep" viewBox="0 0 200 200">
-    <path class="sheep-outline" d="M64 84c-20-4-30 12-24 28 6 10 20 6 28-6m68-22c20-4 30 12 24 28-6 10-20 6-28-6m-74-10c-4 32 16 60 42 62 26-2 46-30 42-62m-84 0c-16 0-18-22-2-26-2-16 22-20 32-8 8-14 32-14 40 0 14-10 36-2 30 16 12 4 8 22-16 18m-64 12q10-8 20 0m24 0q10-8 20 0"/>
-    <path class="sheep-fill" d="M92 118q8-4 16 0-4 8-8 10-4-2-8-10z m-8 14q16 2 32 0-4 18-16 20-12-2-16-20z"/>
-  </symbol>
-</svg>
-
 <header class="topbar">
-  <a class="brand reveal" href="#" aria-label="Una oveja feliz — inicio">Una oveja feliz</a>
   <button class="cta reveal" id="reserveCta">Reservar una cita</button>
 </header>
 
 <main class="hero">
-  <img class="hero-logo reveal" src="images/logo.jpg" width="670" height="645" alt="Una oveja feliz">
+  <img class="hero-logo reveal" src="images/logo-full.png" width="670" height="645" alt="Una oveja feliz">
 
   <!-- ===================== Booking panel (internal mode) ===================== -->
   <div class="booking" id="booking" hidden>
@@ -80,16 +72,18 @@
 
     <form class="form" id="bookingForm">
       <div class="field">
-        <label for="f-name">Nombre y apellidos</label>
-        <input id="f-name" type="text" placeholder="Marta L. García" autocomplete="name">
+        <label for="f-name">Nombre y apellidos <span class="req">*</span></label>
+        <input id="f-name" type="text" placeholder="Marta L. García" autocomplete="name" required aria-required="true">
+        <span class="err">Este campo es obligatorio</span>
       </div>
       <div class="field">
         <label for="f-email">Correo electrónico</label>
         <input id="f-email" type="email" placeholder="marta.garcia@email.com" autocomplete="email">
       </div>
       <div class="field">
-        <label for="f-phone">Teléfono</label>
-        <input id="f-phone" type="tel" placeholder="+34 600 000 000" autocomplete="tel">
+        <label for="f-phone">Teléfono <span class="req">*</span></label>
+        <input id="f-phone" type="tel" placeholder="+34 600 000 000" autocomplete="tel" required aria-required="true">
+        <span class="err">Este campo es obligatorio</span>
       </div>
       <div class="field">
         <label for="f-service">¿Qué te gustaría hacer?</label>
@@ -117,7 +111,7 @@
   <!-- Paso 3 -->
   <section class="card" id="step3" aria-label="Paso 3: confirmado">
     <div class="confirm-body">
-      <div class="confirm-logo" aria-hidden="true"><svg viewBox="0 0 200 200"><use href="#sheep"></use></svg></div>
+      <div class="confirm-logo"><img src="images/logo-mark.png" alt="Una oveja feliz"></div>
       <div class="confirm-title">¡Cita reservada!</div>
       <div class="confirm-sub">Te esperamos en el estudio. Con calma, sin prisa.</div>
 
