@@ -346,6 +346,21 @@ body {
 
 .btn-primary:disabled { opacity: .45; cursor: default; }
 
+.btn-primary.is-loading { opacity: 1; }
+.btn-primary.is-loading::before {
+  content: "";
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--on-dark);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: btn-spin .6s linear infinite;
+}
+@keyframes btn-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .btn-primary.is-loading::before { animation: none; }
+}
+
 .btn-outline {
   height: 46px;
   border: 1px solid var(--ink);

@@ -36,7 +36,7 @@ export const DEFAULT_SERVICE = 'Zumeria';
 /* Márgenes globales. */
 export const SLOT_INTERVAL_MIN = 60; // separación entre inicios de hueco
 export const BUFFER_MIN = 0;         // colchón antes/después de cada evento ocupado
-export const MIN_NOTICE_MIN = 120;   // antelación mínima para reservar (2 h)
+export const MIN_NOTICE_MIN = 60;    // antelación mínima para reservar (1 h)
 export const MAX_ADVANCE_DAYS = 60;  // ventana máxima hacia el futuro
 
 /* Cómo se envía la confirmación al crear el evento:

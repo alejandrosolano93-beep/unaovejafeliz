@@ -7,7 +7,7 @@
      'external' -> abre la página de citas de Google (por defecto v1)
      'internal' -> muestra el flujo de reserva maquetado (Paso 1→2→3)
    Cambiar solo esta constante para alternar el comportamiento.        */
-const BOOKING_MODE = 'external'; // 'external' | 'internal'
+const BOOKING_MODE = 'internal'; // 'external' | 'internal'
 const GOOGLE_BOOKING_URL = 'https://calendar.app.google/P8TvSUSSjdqYemP66';
 
 /* --- Integración backend (Cloudflare Pages Functions) ---------
@@ -406,7 +406,10 @@ document.getElementById('reserveBtn').addEventListener('click', async () => {
   if (!(selectedDate && state.time)) { goToStep('step1'); return; }
 
   const btn = document.getElementById('reserveBtn');
+  const btnLabel = btn.textContent;
   btn.disabled = true;
+  btn.classList.add('is-loading');
+  btn.textContent = 'Reservando…';
   setBookError('');
   try {
     const res = await fetch(`${API_BASE}/api/book`, {
@@ -430,7 +433,7 @@ document.getElementById('reserveBtn').addEventListener('click', async () => {
       return;
     }
 
-    lastBookingLink = data.htmlLink || '';
+    lastBookingLink = data.gcalUrl || data.htmlLink || '';
     document.getElementById('sumDate').textContent = dateLabelLong(selectedDate);
     document.getElementById('sumTime').textContent = `${state.time} · ${availability.durationMin || 60} minutos`;
     document.getElementById('sumService').textContent = state.service;
@@ -443,6 +446,8 @@ document.getElementById('reserveBtn').addEventListener('click', async () => {
     setBookError('Error de red. Inténtalo de nuevo.');
   } finally {
     btn.disabled = false;
+    btn.classList.remove('is-loading');
+    btn.textContent = btnLabel;
   }
 });
 

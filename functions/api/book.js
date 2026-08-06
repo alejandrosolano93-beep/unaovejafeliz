@@ -13,6 +13,19 @@ const json = (obj, status = 200) =>
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+/* Enlace de plantilla para que el CLIENTE añada la cita a SU Google Calendar. */
+function gcalTemplateUrl({ text, details, location, startISO, endISO }) {
+  const fmt = (iso) => iso.replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z'); // 20260806T180000Z
+  const params = new URLSearchParams({
+    action: 'TEMPLATE',
+    text,
+    dates: `${fmt(startISO)}/${fmt(endISO)}`,
+    details,
+    location,
+  });
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
 async function verifyTurnstile(env, token, ip) {
   if (!env.TURNSTILE_SECRET) return true; // sin secret configurado, no bloquea (dev)
   const res = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
@@ -84,7 +97,14 @@ export async function onRequestPost({ request, env }) {
     if (SEND_UPDATES === 'all' && email) event.attendees = [{ email }];
 
     const created = await insertEvent(env, token, event, SEND_UPDATES);
-    return json({ ok: true, eventId: created.id, htmlLink: created.htmlLink });
+    const gcalUrl = gcalTemplateUrl({
+      text: `Una oveja feliz · ${service}`,
+      details: `Tu cita de ${service}.${notes ? `\n${notes}` : ''}`,
+      location,
+      startISO: start.toISOString(),
+      endISO: end.toISOString(),
+    });
+    return json({ ok: true, eventId: created.id, htmlLink: created.htmlLink, gcalUrl });
   } catch (err) {
     return json({ error: 'SERVER_ERROR', detail: String(err && err.message || err) }, 500);
   }
