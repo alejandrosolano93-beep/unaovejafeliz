@@ -430,15 +430,21 @@ body {
   .hero { flex-direction: column; gap: 32px; padding: 100px 20px 60px; }
   .hero-logo { max-height: 34vh; }
 
-  /* con el flujo de reserva abierto, el logo se reduce y ancla arriba a la izquierda */
-  .hero.is-staged { padding-top: 96px; }
+  /* con el flujo de reserva abierto: header fijo (logo + CTA alineados) y el resto scrollea debajo */
+  body:has(.hero.is-staged) .topbar {
+    height: 72px;
+    padding: 0 20px;
+    background: var(--bg);
+    box-shadow: 0 1px 0 var(--border);
+  }
+  .hero.is-staged { padding-top: 88px; }
   .hero.is-staged .hero-logo {
     position: fixed;
-    top: 16px;
+    top: 8px;
     left: 20px;
     margin: 0;
-    max-width: 76px;
-    max-height: 58px;
+    max-width: 110px;
+    max-height: 56px;
     z-index: 21;
   }
 }
